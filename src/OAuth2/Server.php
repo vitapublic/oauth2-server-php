@@ -7,6 +7,7 @@ use OAuth2\Controller\ResourceController;
 use OAuth2\OpenID\Controller\UserInfoControllerInterface;
 use OAuth2\OpenID\Controller\UserInfoController;
 use OAuth2\OpenID\Controller\AuthorizeController as OpenIDAuthorizeController;
+use OAuth2\OpenID\Controller\TokenController as OpenIDTokenController;
 use OAuth2\OpenID\ResponseType\AuthorizationCode as OpenIDAuthorizationCodeResponseType;
 use OAuth2\OpenID\Storage\AuthorizationCodeInterface as OpenIDAuthorizationCodeInterface;
 use OAuth2\OpenID\GrantType\AuthorizationCode as OpenIDAuthorizationCodeGrantType;
@@ -482,6 +483,13 @@ class Server implements ResourceControllerInterface,
             $this->grantTypes = $this->getDefaultGrantTypes();
         }
 
+        if ($this->config['use_openid_connect'] && !isset($this->responseTypes['id_token'])) {
+            $this->responseTypes['id_token'] = $this->createDefaultIdTokenResponseType();
+            if ($this->config['allow_implicit']) {
+                $this->responseTypes['id_token token'] = $this->createDefaultIdTokenTokenResponseType();
+            }
+        }
+
         if (is_null($this->clientAssertionType)) {
             // see if HttpBasic assertion type is requred.  If so, then create it from storage classes.
             foreach ($this->grantTypes as $grantType) {
@@ -501,6 +509,10 @@ class Server implements ResourceControllerInterface,
         }
 
         $accessTokenResponseType = $this->getAccessTokenResponseType();
+
+        if ($this->config['use_openid_connect']) {
+            return new OpenIDTokenController($accessTokenResponseType, $this->storages['client'], $this->grantTypes, $this->clientAssertionType, $this->getScopeUtil(), $this->responseTypes);
+        }
 
         return new TokenController($accessTokenResponseType, $this->storages['client'], $this->grantTypes, $this->clientAssertionType, $this->getScopeUtil());
     }
