@@ -50,7 +50,7 @@ class TokenController extends BaseTokenController implements AuthorizeController
         }
 
         // Generate an id token if needed.
-        if ($this->needsIdToken($this->scopeUtil->getScopeFromRequest($request))) {
+        if ($this->needsIdToken($this->scopeUtil->getScopeFromRequest($request), $request->request('grant_type'))) {
             $userId = $this->grantTypes['password']->getUserId();
             $clientId = $this->grantTypes['password']->getClientId();
             try {
@@ -78,10 +78,10 @@ class TokenController extends BaseTokenController implements AuthorizeController
      * @return
      *   TRUE if an id token is needed, FALSE otherwise.
      */
-    public function needsIdToken($request_scope)
+    public function needsIdToken($request_scope, $grant_type)
     {
         // see if the "openid" scope exists in the requested scope
-        return $this->scopeUtil->checkScope('openid', $request_scope);
+        return $this->scopeUtil->checkScope('openid', $request_scope) && $grant_type !== 'refresh_token';
     }
 
     public function getScope()
