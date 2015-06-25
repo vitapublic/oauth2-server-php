@@ -57,6 +57,7 @@ class Server implements ResourceControllerInterface,
     protected $tokenController;
     protected $resourceController;
     protected $userInfoController;
+    protected $introspectController;
 
     // config classes
     protected $grantTypes;
@@ -178,7 +179,16 @@ class Server implements ResourceControllerInterface,
 
         return $this->userInfoController;
     }
-
+    
+    public function getIntrospectController()
+    {
+        if (is_null($this->introspectController)) {
+            $this->introspectController = $this->createDefaultIntrospectController();
+        }
+        
+        return $this->introspectController;
+    }
+    
     /**
      * every getter deserves a setter
      */
@@ -209,6 +219,14 @@ class Server implements ResourceControllerInterface,
     public function setUserInfoController(UserInfoControllerInterface $userInfoController)
     {
         $this->userInfoController = $userInfoController;
+    }
+
+    /**
+     * every getter deserves a setter <== LOL
+     */
+    public function setIntrospectController($introspectController)
+    {
+        $this->introspectController = $introspectController;
     }
 
     /**
@@ -258,6 +276,20 @@ class Server implements ResourceControllerInterface,
     {
         $this->response = is_null($response) ? new Response() : $response;
         $this->getTokenController()->handleTokenRequest($request, $this->response);
+
+        return $this->response;
+    }
+    
+    /**
+     * 
+     * @param \OAuth2\RequestInterface $request
+     * @param \OAuth2\ResponseInterface $response
+     * @return type
+     */
+    public function handleIntrospectRequest(RequestInterface $request, ResponseInterface $response = null)
+    {
+        $this->response = is_null($response) ? new Response() : $response;
+        $this->getIntrospectController()->handleTokenRequest($request, $this->response);
 
         return $this->response;
     }
