@@ -8,6 +8,7 @@ use OAuth2\OpenID\Controller\UserInfoControllerInterface;
 use OAuth2\OpenID\Controller\UserInfoController;
 use OAuth2\OpenID\Controller\AuthorizeController as OpenIDAuthorizeController;
 use OAuth2\OpenID\Controller\TokenController as OpenIDTokenController;
+use OAuth2\OpenID\Controller\IntrospectController as OpenIDIntrospectController;
 use OAuth2\OpenID\ResponseType\AuthorizationCode as OpenIDAuthorizationCodeResponseType;
 use OAuth2\OpenID\Storage\AuthorizationCodeInterface as OpenIDAuthorizationCodeInterface;
 use OAuth2\OpenID\GrantType\AuthorizationCode as OpenIDAuthorizationCodeGrantType;
@@ -33,6 +34,7 @@ use OAuth2\GrantType\RefreshToken;
 use OAuth2\GrantType\AuthorizationCode;
 use OAuth2\Storage\JwtAccessToken as JwtAccessTokenStorage;
 use OAuth2\Storage\JwtAccessTokenInterface;
+use OAuth2Server\Controller\IntrospectController;
 
 /**
 * Server class for OAuth2
@@ -289,7 +291,7 @@ class Server implements ResourceControllerInterface,
     public function handleIntrospectRequest(RequestInterface $request, ResponseInterface $response = null)
     {
         $this->response = is_null($response) ? new Response() : $response;
-        $this->getIntrospectController()->handleTokenRequest($request, $this->response);
+        $this->getIntrospectController()->handleIntrospectRequest($request, $this->response);
 
         return $this->response;
     }
@@ -547,6 +549,25 @@ class Server implements ResourceControllerInterface,
         }
 
         return new TokenController($accessTokenResponseType, $this->storages['client'], $this->grantTypes, $this->clientAssertionType, $this->getScopeUtil());
+    }
+
+    protected function createDefaultIntrospectController()
+    {
+        if (!isset($this->storages['client_credentials'])) {
+            throw new \LogicException("You must supply a storage object implementing OAuth2\Storage\ClientCredentialsInterface to use the token server");
+        } elseif (!isset($this->storages['access_token'])) {
+            throw new \LogicException("You must supply a storage object implementing OAuth2\Storage\AccessTokenInterface or use JwtAccessTokens to use the resource server");
+        }
+
+        if (!$this->tokenType) {
+            $this->tokenType = $this->getDefaultTokenType();
+        }
+
+        $clientAssertionType = new HttpBasic($this->storages['client_credentials']);
+
+        $config = array_intersect_key($this->config, array_flip(explode(' ', 'issuer id_lifetime')));
+
+        return new OpenIDIntrospectController($this->storages['access_token'], $this->storages['client'], $clientAssertionType, $config);
     }
 
     protected function createDefaultResourceController()
