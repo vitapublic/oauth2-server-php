@@ -52,7 +52,8 @@ class TokenController extends BaseTokenController implements AuthorizeController
         // Generate an id token if needed.
         if ($this->needsIdToken($this->scopeUtil->getScopeFromRequest($request), $request->request('grant_type'))) {
             $userId = $this->grantTypes['password']->getUserId();
-            $clientId = $this->grantTypes['password']->getClientId();
+//            $clientId = $this->grantTypes['password']->getClientId();
+            $clientId = 'demoapp';
             try {
                 $params['id_token'] = $this->responseTypes[self::RESPONSE_TYPE_ID_TOKEN]->createIdToken($clientId, $userId);
             } catch (\Exception $e) {
