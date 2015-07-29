@@ -51,9 +51,17 @@ class TokenController extends BaseTokenController implements AuthorizeController
 
         // Generate an id token if needed.
         if ($this->needsIdToken($this->scopeUtil->getScopeFromRequest($request), $request->request('grant_type'))) {
-            $userId = $this->grantTypes['password']->getUserId();
-//            $clientId = $this->grantTypes['password']->getClientId();
-            $clientId = 'demoapp';
+            
+            if ($request->request('grant_type') == 'refresh_token') {
+                $userId = $this->grantTypes['refresh_token']->getUserId();
+            }
+            
+            if ($request->request('grant_type') == 'password') {
+                $userId = $this->grantTypes['password']->getUserId();
+            }
+            
+            $clientId = $this->clientAssertionType->getClientId();
+            
             try {
                 $params['id_token'] = $this->responseTypes[self::RESPONSE_TYPE_ID_TOKEN]->createIdToken($clientId, $userId);
             } catch (\Exception $e) {
@@ -61,9 +69,37 @@ class TokenController extends BaseTokenController implements AuthorizeController
                 die();
             }
         }
+        
+        // Generate an aws token if needed.
+        if ($this->needsAwsToken($this->scopeUtil->getScopeFromRequest($request), $request->request('grant_type'))) {
+            
+            $clientId  = $this->clientAssertionType->getClientId();
+            
+            // set the sub value depending on the clientId value
+            // @todo find a better way to inject these values
+            if ($clientId == '6b62c664a4440c032c80740e73133cd0e3bb45a2.connect.apps.juuna-test.vitapublic.de') {
+                $userId = 'team-123456789';
+                
+                // if this is a edit user
+                if (1 == 1) {
+                    $clientId = '6b62c664a4440c032c80740e73133cd0e3bb45a2.edit.connect.apps.juuna-test.vitapublic.de';
+                } else {
+                    $clientId = '6b62c664a4440c032c80740e73133cd0e3bb45a2.display.connect.apps.juuna-test.vitapublic.de';
+                }
+            } else {
+                $userId   = 'user-' . $userId;
+                $clientId = '6b62c664a4440c032c80740e73133cd0e3bb45a2.edit.connect.apps.juuna-test.vitapublic.de';
+            }
+            
+            try {
+                $params['aws_token'] = $this->responseTypes[self::RESPONSE_TYPE_ID_TOKEN]->createIdToken($clientId, $userId);
+            } catch (\Exception $e) {
+                var_dump($e);
+                die();
+            }
+        }
 
         return $params;
-
     }
 
     /**
@@ -82,7 +118,25 @@ class TokenController extends BaseTokenController implements AuthorizeController
     public function needsIdToken($request_scope, $grant_type)
     {
         // see if the "openid" scope exists in the requested scope
-        return $this->scopeUtil->checkScope('openid', $request_scope) && $grant_type !== 'refresh_token';
+        return $this->scopeUtil->checkScope('openid', $request_scope);
+    }
+    
+    /**
+     * Returns whether the current request needs to generate an aws token.
+     *
+     * AWS Tokens are a part of the JUUNA specific Implementation to handle specific policies and right in the aws
+     * scenario.
+     *
+     * @param $request_scope
+     *  A space-separated string of scopes.
+     *
+     * @return
+     *   TRUE if an id token is needed, FALSE otherwise.
+     */
+    public function needsAwsToken($request_scope, $grant_type)
+    {
+        // see if the "aws" scope exists in the requested scope
+        return $this->scopeUtil->checkScope('aws', $request_scope);
     }
 
     public function getScope()
