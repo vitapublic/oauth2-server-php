@@ -29,6 +29,7 @@ use OAuth2\TokenType\TokenTypeInterface;
 use OAuth2\TokenType\Bearer;
 use OAuth2\GrantType\GrantTypeInterface;
 use OAuth2\GrantType\UserCredentials;
+use OAuth2\OpenID\GrantType\DisplayCode;
 use OAuth2\GrantType\ClientCredentials;
 use OAuth2\GrantType\RefreshToken;
 use OAuth2\GrantType\AuthorizationCode;
@@ -75,6 +76,7 @@ class Server implements ResourceControllerInterface,
         'client' => 'OAuth2\Storage\ClientInterface',
         'refresh_token' => 'OAuth2\Storage\RefreshTokenInterface',
         'user_credentials' => 'OAuth2\Storage\UserCredentialsInterface',
+        'display_code' => 'OAuth2\OpenID\Storage\DisplayCodeInterface',
         'user_claims' => 'OAuth2\OpenID\Storage\UserClaimsInterface',
         'public_key' => 'OAuth2\Storage\PublicKeyInterface',
         'jwt_bearer' => 'OAuth2\Storage\JWTBearerInterface',
@@ -662,6 +664,10 @@ class Server implements ResourceControllerInterface,
 
         if (isset($this->storages['user_credentials'])) {
             $grantTypes['password'] = new UserCredentials($this->storages['user_credentials']);
+        }
+
+        if (isset($this->storages['display_code'])) {
+            $grantTypes['display_code'] = new DisplayCode($this->storages['display_code']);
         }
 
         if (isset($this->storages['client_credentials'])) {

@@ -136,7 +136,7 @@ class TokenController extends BaseTokenController implements AuthorizeController
     public function needsAwsToken($request_scope, $grant_type)
     {
         // see if the "aws" scope exists in the requested scope
-        return $this->scopeUtil->checkScope('aws', $request_scope);
+        return $this->scopeUtil->checkScope('e_aws', $request_scope) || $this->scopeUtil->checkScope('d_aws', $request_scope);
     }
 
     public function getScope()
