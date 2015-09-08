@@ -16,8 +16,8 @@ interface UserClaimsInterface
     const EMAIL_CLAIM_VALUES = 'email email_verified';
     const ADDRESS_CLAIM_VALUES = 'formatted street_address locality region postal_code country';
     const PHONE_CLAIM_VALUES = 'phone_number phone_number_verified';
-    const E_ASSETS_CLAIM_VALUES = 'userid teamid membership membership_exires_at user_type active solve_membership_error';
-    const D_ASSETS_CLAIM_VALUES = 'userid teamid membership membership_exires_at user_type active solve_membership_error';
+    const E_ASSETS_CLAIM_VALUES = 'userid user_pk user_type teamid teamuser_pk membership membership_exires_at active solve_membership_error';
+    const D_ASSETS_CLAIM_VALUES = 'userid user_pk user_type teamid teamuser_pk membership membership_exires_at active solve_membership_error';
 
     /**
      * Return claims about the provided user id.
