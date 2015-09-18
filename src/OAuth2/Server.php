@@ -7,6 +7,8 @@ use OAuth2\Controller\ResourceController;
 use OAuth2\OpenID\Controller\UserInfoControllerInterface;
 use OAuth2\OpenID\Controller\UserInfoController;
 use OAuth2\OpenID\Controller\AuthorizeController as OpenIDAuthorizeController;
+use OAuth2\OpenID\Controller\TokenController as OpenIDTokenController;
+use OAuth2\OpenID\Controller\IntrospectController as OpenIDIntrospectController;
 use OAuth2\OpenID\ResponseType\AuthorizationCode as OpenIDAuthorizationCodeResponseType;
 use OAuth2\OpenID\Storage\AuthorizationCodeInterface as OpenIDAuthorizationCodeInterface;
 use OAuth2\OpenID\GrantType\AuthorizationCode as OpenIDAuthorizationCodeGrantType;
@@ -27,11 +29,13 @@ use OAuth2\TokenType\TokenTypeInterface;
 use OAuth2\TokenType\Bearer;
 use OAuth2\GrantType\GrantTypeInterface;
 use OAuth2\GrantType\UserCredentials;
+use OAuth2\OpenID\GrantType\DisplayCode;
 use OAuth2\GrantType\ClientCredentials;
 use OAuth2\GrantType\RefreshToken;
 use OAuth2\GrantType\AuthorizationCode;
 use OAuth2\Storage\JwtAccessToken as JwtAccessTokenStorage;
 use OAuth2\Storage\JwtAccessTokenInterface;
+use OAuth2Server\Controller\IntrospectController;
 
 /**
 * Server class for OAuth2
@@ -56,6 +60,7 @@ class Server implements ResourceControllerInterface,
     protected $tokenController;
     protected $resourceController;
     protected $userInfoController;
+    protected $introspectController;
 
     // config classes
     protected $grantTypes;
@@ -71,6 +76,7 @@ class Server implements ResourceControllerInterface,
         'client' => 'OAuth2\Storage\ClientInterface',
         'refresh_token' => 'OAuth2\Storage\RefreshTokenInterface',
         'user_credentials' => 'OAuth2\Storage\UserCredentialsInterface',
+        'display_code' => 'OAuth2\OpenID\Storage\DisplayCodeInterface',
         'user_claims' => 'OAuth2\OpenID\Storage\UserClaimsInterface',
         'public_key' => 'OAuth2\Storage\PublicKeyInterface',
         'jwt_bearer' => 'OAuth2\Storage\JWTBearerInterface',
@@ -83,6 +89,7 @@ class Server implements ResourceControllerInterface,
         'id_token' => 'OAuth2\OpenID\ResponseType\IdTokenInterface',
         'id_token token' => 'OAuth2\OpenID\ResponseType\IdTokenTokenInterface',
         'code id_token' => 'OAuth2\OpenID\ResponseType\CodeIdTokenInterface',
+        'aws_token' => 'OAuth2\OpenID\ResponseType\AwsTokenInterface',
     );
 
     /**
@@ -177,7 +184,16 @@ class Server implements ResourceControllerInterface,
 
         return $this->userInfoController;
     }
-
+    
+    public function getIntrospectController()
+    {
+        if (is_null($this->introspectController)) {
+            $this->introspectController = $this->createDefaultIntrospectController();
+        }
+        
+        return $this->introspectController;
+    }
+    
     /**
      * every getter deserves a setter
      */
@@ -208,6 +224,14 @@ class Server implements ResourceControllerInterface,
     public function setUserInfoController(UserInfoControllerInterface $userInfoController)
     {
         $this->userInfoController = $userInfoController;
+    }
+
+    /**
+     * every getter deserves a setter <== LOL
+     */
+    public function setIntrospectController($introspectController)
+    {
+        $this->introspectController = $introspectController;
     }
 
     /**
@@ -257,6 +281,20 @@ class Server implements ResourceControllerInterface,
     {
         $this->response = is_null($response) ? new Response() : $response;
         $this->getTokenController()->handleTokenRequest($request, $this->response);
+
+        return $this->response;
+    }
+    
+    /**
+     * 
+     * @param \OAuth2\RequestInterface $request
+     * @param \OAuth2\ResponseInterface $response
+     * @return type
+     */
+    public function handleIntrospectRequest(RequestInterface $request, ResponseInterface $response = null)
+    {
+        $this->response = is_null($response) ? new Response() : $response;
+        $this->getIntrospectController()->handleIntrospectRequest($request, $this->response);
 
         return $this->response;
     }
@@ -482,6 +520,13 @@ class Server implements ResourceControllerInterface,
             $this->grantTypes = $this->getDefaultGrantTypes();
         }
 
+        if ($this->config['use_openid_connect'] && !isset($this->responseTypes['id_token'])) {
+            $this->responseTypes['id_token'] = $this->createDefaultIdTokenResponseType();
+            if ($this->config['allow_implicit']) {
+                $this->responseTypes['id_token token'] = $this->createDefaultIdTokenTokenResponseType();
+            }
+        }
+
         if (is_null($this->clientAssertionType)) {
             // see if HttpBasic assertion type is requred.  If so, then create it from storage classes.
             foreach ($this->grantTypes as $grantType) {
@@ -502,7 +547,30 @@ class Server implements ResourceControllerInterface,
 
         $accessTokenResponseType = $this->getAccessTokenResponseType();
 
+        if ($this->config['use_openid_connect']) {
+            return new OpenIDTokenController($accessTokenResponseType, $this->storages['client'], $this->grantTypes, $this->clientAssertionType, $this->getScopeUtil(), $this->responseTypes);
+        }
+
         return new TokenController($accessTokenResponseType, $this->storages['client'], $this->grantTypes, $this->clientAssertionType, $this->getScopeUtil());
+    }
+
+    protected function createDefaultIntrospectController()
+    {
+        if (!isset($this->storages['client_credentials'])) {
+            throw new \LogicException("You must supply a storage object implementing OAuth2\Storage\ClientCredentialsInterface to use the token server");
+        } elseif (!isset($this->storages['access_token'])) {
+            throw new \LogicException("You must supply a storage object implementing OAuth2\Storage\AccessTokenInterface or use JwtAccessTokens to use the resource server");
+        }
+
+        if (!$this->tokenType) {
+            $this->tokenType = $this->getDefaultTokenType();
+        }
+
+        $clientAssertionType = new HttpBasic($this->storages['client_credentials']);
+
+        $config = array_intersect_key($this->config, array_flip(explode(' ', 'issuer id_lifetime')));
+
+        return new OpenIDIntrospectController($this->storages['access_token'], $this->storages['client'], $clientAssertionType, $config);
     }
 
     protected function createDefaultResourceController()
@@ -597,6 +665,10 @@ class Server implements ResourceControllerInterface,
 
         if (isset($this->storages['user_credentials'])) {
             $grantTypes['password'] = new UserCredentials($this->storages['user_credentials']);
+        }
+
+        if (isset($this->storages['display_code'])) {
+            $grantTypes['display_code'] = new DisplayCode($this->storages['display_code']);
         }
 
         if (isset($this->storages['client_credentials'])) {

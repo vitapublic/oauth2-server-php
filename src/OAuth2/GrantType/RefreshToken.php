@@ -97,6 +97,7 @@ class RefreshToken implements GrantTypeInterface
          * It is optional to force a new refresh token when a refresh token is used.
          * However, if a new refresh token is issued, the old one MUST be expired
          * @see http://tools.ietf.org/html/rfc6749#section-6
+         * @todo ChrBo: Should the scope be removed from the response? The Standard defines YES - it shold be removed!
          */
         $issueNewRefreshToken = $this->config['always_issue_new_refresh_token'];
         $unsetRefreshToken = $this->config['unset_refresh_token_after_use'];

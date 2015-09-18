@@ -1,5 +1,5 @@
 {
-    "name": "bshaffer/oauth2-server-php",
+    "name": "vitapublic/oauth2-server-php",
     "description":"OAuth2 Server for PHP",
     "keywords":["oauth","oauth2","auth"],
     "type":"library",
@@ -22,5 +22,8 @@
         "predis/predis": "Required to use the Redis storage engine",
         "thobbs/phpcassa": "Required to use the Cassandra storage engine",
         "aws/aws-sdk-php": "Required to use the DynamoDB storage engine"
+    },
+    "replace": {
+        "bshaffer/oauth2-server-php":"~1.3"
     }
 }
