@@ -89,6 +89,7 @@ class Server implements ResourceControllerInterface,
         'id_token' => 'OAuth2\OpenID\ResponseType\IdTokenInterface',
         'id_token token' => 'OAuth2\OpenID\ResponseType\IdTokenTokenInterface',
         'code id_token' => 'OAuth2\OpenID\ResponseType\CodeIdTokenInterface',
+        'aws_token' => 'OAuth2\OpenID\ResponseType\AwsTokenInterface',
     );
 
     /**

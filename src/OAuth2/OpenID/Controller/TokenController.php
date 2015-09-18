@@ -75,24 +75,16 @@ class TokenController extends BaseTokenController implements AuthorizeController
             
             $clientId  = $this->clientAssertionType->getClientId();
             
-            // set the sub value depending on the clientId value
-            // @todo find a better way to inject these values
-            if ($clientId == '6b62c664a4440c032c80740e73133cd0e3bb45a2.connect.apps.juuna-test.vitapublic.de') {
-                $userId = 'team-123456789';
-                
-                // if this is a edit user
-                if (1 == 1) {
-                    $clientId = '6b62c664a4440c032c80740e73133cd0e3bb45a2.edit.connect.apps.juuna-test.vitapublic.de';
-                } else {
-                    $clientId = '6b62c664a4440c032c80740e73133cd0e3bb45a2.display.connect.apps.juuna-test.vitapublic.de';
-                }
-            } else {
-                $userId   = 'user-' . $userId;
-                $clientId = '6b62c664a4440c032c80740e73133cd0e3bb45a2.edit.connect.apps.juuna-test.vitapublic.de';
+            if ($request->request('grant_type') == 'refresh_token') {
+                $userId = $this->grantTypes['refresh_token']->getUserId();
+            }
+            
+            if ($request->request('grant_type') == 'password') {
+                $userId = $this->grantTypes['password']->getUserId();
             }
             
             try {
-                $params['aws_token'] = $this->responseTypes[self::RESPONSE_TYPE_ID_TOKEN]->createIdToken($clientId, $userId);
+                $params['aws_token'] = $this->responseTypes['aws_token']->createAwsToken($clientId, $userId);
             } catch (\Exception $e) {
                 var_dump($e);
                 die();
