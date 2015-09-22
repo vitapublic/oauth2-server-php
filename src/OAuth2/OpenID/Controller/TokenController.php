@@ -52,18 +52,26 @@ class TokenController extends BaseTokenController implements AuthorizeController
         // Generate an id token if needed.
         if ($this->needsIdToken($this->scopeUtil->getScopeFromRequest($request), $request->request('grant_type'))) {
             
+            $idTokenClientId = $this->clientAssertionType->getClientId();
+            $idTokenUserId   = null;
+            
             if ($request->request('grant_type') == 'refresh_token') {
-                $userId = $this->grantTypes['refresh_token']->getUserId();
+                $idTokenUserId = $this->grantTypes['refresh_token']->getUserId();
             }
             
             if ($request->request('grant_type') == 'password') {
-                $userId = $this->grantTypes['password']->getUserId();
+                $idTokenuserId = $this->grantTypes['password']->getUserId();
             }
             
-            $clientId = $this->clientAssertionType->getClientId();
+            if ($request->request('grant_type') == 'display_code') {
+                $idTokenuserId = $this->grantTypes['display_code']->getUserId();
+            }
             
             try {
-                $params['id_token'] = $this->responseTypes[self::RESPONSE_TYPE_ID_TOKEN]->createIdToken($clientId, $userId);
+                $params['id_token'] = $this->responseTypes[self::RESPONSE_TYPE_ID_TOKEN]->createIdToken(
+                    $idTokenClientId,
+                    $idTokenUserId
+                );
             } catch (\Exception $e) {
                 var_dump($e);
                 die();
@@ -73,18 +81,26 @@ class TokenController extends BaseTokenController implements AuthorizeController
         // Generate an aws token if needed.
         if ($this->needsAwsToken($this->scopeUtil->getScopeFromRequest($request), $request->request('grant_type'))) {
             
-            $clientId  = $this->clientAssertionType->getClientId();
+            $awsTokenClientId = $this->clientAssertionType->getClientId();
+            $awsTokenUserId  = null;
             
             if ($request->request('grant_type') == 'refresh_token') {
-                $userId = $this->grantTypes['refresh_token']->getUserId();
+                $awsTokenUserId = $this->grantTypes['refresh_token']->getUserId();
             }
             
             if ($request->request('grant_type') == 'password') {
-                $userId = $this->grantTypes['password']->getUserId();
+                $awsTokenUserId = $this->grantTypes['password']->getUserId();
+            }
+            
+            if ($request->request('grant_type') == 'display_code') {
+                $awsTokenUserId = $this->grantTypes['display_code']->getUserId();
             }
             
             try {
-                $params['aws_token'] = $this->responseTypes['aws_token']->createAwsToken($clientId, $userId);
+                $params['aws_token'] = $this->responseTypes['aws_token']->createAwsToken(
+                    $awsTokenClientId,
+                    $awsTokenUserId
+                );
             } catch (\Exception $e) {
                 var_dump($e);
                 die();
