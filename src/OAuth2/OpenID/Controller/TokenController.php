@@ -55,17 +55,11 @@ class TokenController extends BaseTokenController implements AuthorizeController
             $idTokenClientId = $this->clientAssertionType->getClientId();
             $idTokenUserId   = null;
             
-            if ($request->request('grant_type') == 'refresh_token') {
-                $idTokenUserId = $this->grantTypes['refresh_token']->getUserId();
+            if (!array_key_exists($request->request('grant_type'), $this->grantTypes)) {
+                throw new Exception('Grant type "' . $request->request('grant_type') . '" does not exist!');
             }
             
-            if ($request->request('grant_type') == 'password') {
-                $idTokenuserId = $this->grantTypes['password']->getUserId();
-            }
-            
-            if ($request->request('grant_type') == 'display_code') {
-                $idTokenuserId = $this->grantTypes['display_code']->getUserId();
-            }
+            $idTokenUserId = $this->grantTypes[$request->request('grant_type')]->getUserId();
             
             try {
                 $params['id_token'] = $this->responseTypes[self::RESPONSE_TYPE_ID_TOKEN]->createIdToken(
@@ -84,17 +78,11 @@ class TokenController extends BaseTokenController implements AuthorizeController
             $awsTokenClientId = $this->clientAssertionType->getClientId();
             $awsTokenUserId  = null;
             
-            if ($request->request('grant_type') == 'refresh_token') {
-                $awsTokenUserId = $this->grantTypes['refresh_token']->getUserId();
+            if (!array_key_exists($request->request('grant_type'), $this->grantTypes)) {
+                throw new Exception('Grant type "' . $request->request('grant_type') . '" does not exist!');
             }
             
-            if ($request->request('grant_type') == 'password') {
-                $awsTokenUserId = $this->grantTypes['password']->getUserId();
-            }
-            
-            if ($request->request('grant_type') == 'display_code') {
-                $awsTokenUserId = $this->grantTypes['display_code']->getUserId();
-            }
+            $awsTokenUserId = $this->grantTypes[$request->request('grant_type')]->getUserId();
             
             try {
                 $params['aws_token'] = $this->responseTypes['aws_token']->createAwsToken(
