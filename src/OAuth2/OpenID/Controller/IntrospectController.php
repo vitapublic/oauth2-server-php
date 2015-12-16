@@ -55,17 +55,10 @@ class IntrospectController implements IntrospectControllerInterface
         if (empty($resource_id)) {
             $response->setError(400, 'invalid_request', 'Missing resource ID');
             return false;
+        } elseif (!$this->validateScope($token)) {
+            $response->setError('401', 'invalid_token', 'The access token provided is invalid for resource');
+            return false;
         }
-
-        // @todo: validate resource
-//        if (invalid) {
-//            $response->addParameters(
-//                array(
-//                    'active' => false,
-//                )
-//            );
-//            return true;
-//        }
 
         //get resource sub and aud
         $sub = '<internal-resource-id>';
@@ -87,4 +80,27 @@ class IntrospectController implements IntrospectControllerInterface
 
         return true;
     }
+
+    protected function validateScope($token)
+    {
+        $clientScope = $this->clientStorage->getClientScope($token['client_id']);
+
+        // Allow all scope, when token is null
+        if ($clientScope == null) {
+            return true;
+        }
+        $clientScope = explode(' ', $clientScope);
+        $tokenScope = explode(' ', $token['scope']);
+
+        foreach ($tokenScope as $scope) {
+            if (!in_array($scope, $clientScope)) {
+                return false;
+            }
+        }
+
+        // TODO Validate scope by user, if available
+
+        return true;
+    }
+
 }
