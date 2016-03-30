@@ -76,6 +76,19 @@ class UserCredentials implements GrantTypeInterface
         return isset($this->userInfo['scope']) ? $this->userInfo['scope'] : null;
     }
 
+    public function hasAclDenyRole()
+    {
+        if (method_exists($this->storage, 'getScopeAclDenyRoles') && method_exists($this->storage, 'getScopeAclRoles')) {
+            $roles = $this->storage->getScopeAclRoles();
+            $denyRoles = $this->storage->getScopeAclDenyRoles();
+
+            $userDenyRoles = array_intersect($roles, $denyRoles);
+            return true;
+        }
+
+        return false;
+    }
+
     public function createAccessToken(AccessTokenInterface $accessToken, $client_id, $user_id, $scope)
     {
         return $accessToken->createAccessToken($client_id, $user_id, $scope);

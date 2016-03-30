@@ -163,7 +163,12 @@ class TokenController implements TokenControllerInterface
             // validate the requested scope
             if ($availableScope) {
                 if (!$this->scopeUtil->checkScope($requestedScope, $availableScope)) {
-                    $response->setError(400, 'invalid_scope', 'The scope requested is invalid for this request');
+                    if ($grantType->hasAclDenyRole()) {
+                        $response->setError(401, 'invalid_scope', 'The scope requested is invalid for the current membership', 'https://www.juuna.de/');
+
+                    } else {
+                        $response->setError(400, 'invalid_scope', 'The scope requested is invalid for this request');
+                    }
 
                     return null;
                 }
