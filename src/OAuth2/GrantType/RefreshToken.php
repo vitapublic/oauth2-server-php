@@ -88,7 +88,31 @@ class RefreshToken implements GrantTypeInterface
 
     public function getScope()
     {
-        return isset($this->refreshToken['scope']) ? $this->refreshToken['scope'] : null;
+        $refreshTokenScope = isset($this->refreshToken['scope']) ? $this->refreshToken['scope'] : null;
+
+        // if the refresh token is in user context get the for the user available scopes and reduce the refreh token
+        // scopes to them. This is part of the vitapublic acl and membership based scope handling.
+        if (!empty($this->getUserId())) {
+            $userInfo               = $this->storage->getUserDetails($this->getUserId());
+            $userInfoScopeArray     = explode(' ', $userInfo['scope']);
+            $refreshTokenScopeArray = explode(' ', $refreshTokenScope);
+            $refreshTokenScope      = implode(' ', array_intersect($refreshTokenScopeArray, $userInfoScopeArray));
+        }
+
+        return $refreshTokenScope;
+    }
+
+    public function hasAclDenyRole()
+    {
+        if (method_exists($this->storage, 'getScopeAclDenyRoles') && method_exists($this->storage, 'getScopeAclRoles')) {
+            $roles = $this->storage->getScopeAclRoles();
+            $denyRoles = $this->storage->getScopeAclDenyRoles();
+
+            $userDenyRoles = array_intersect($roles, $denyRoles);
+            return true;
+        }
+
+        return false;
     }
 
     public function createAccessToken(AccessTokenInterface $accessToken, $client_id, $user_id, $scope)
