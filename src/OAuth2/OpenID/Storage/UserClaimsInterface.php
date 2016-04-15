@@ -9,7 +9,7 @@ namespace OAuth2\OpenID\Storage;
 interface UserClaimsInterface
 {
     // valid scope values to pass into the user claims API call
-    const VALID_CLAIMS = 'profile email address phone e_assets d_assets';
+    const VALID_CLAIMS = 'profile email address phone e_assets d_assets o_tasks';
 
     // fields returned for the claims above
     const PROFILE_CLAIM_VALUES = 'name family_name given_name middle_name nickname preferred_username profile picture website gender birthdate zoneinfo locale updated_at';
@@ -18,6 +18,7 @@ interface UserClaimsInterface
     const PHONE_CLAIM_VALUES = 'phone_number phone_number_verified';
     const E_ASSETS_CLAIM_VALUES = 'userid user_pk lastname user_type teamid teamuser_pk membership membership_expires_at active solve_membership_error';
     const D_ASSETS_CLAIM_VALUES = 'userid user_pk lastname user_type teamid teamuser_pk membership membership_expires_at active solve_membership_error';
+    const O_TASKS_CLAIM_VALUES = 'lastname';
 
     /**
      * Return claims about the provided user id.
