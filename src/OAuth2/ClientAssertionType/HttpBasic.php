@@ -60,8 +60,18 @@ class HttpBasic implements ClientAssertionTypeInterface
                 return false;
             }
         } elseif ($this->storage->checkClientCredentials($clientData['client_id'], $clientData['client_secret']) === false) {
+
             $response->setError(400, 'invalid_client', 'The client credentials are invalid');
 
+            return false;
+        }
+
+        // @todo we should create a own HttpBasic ClientAssertionType to avoid vitapublic code in the library
+        if (
+            method_exists($this->storage, 'checkClientCredentialsOutdated') &&
+            $this->storage->checkClientCredentialsOutdated($clientData['client_id'])
+        ) {
+            $response->setError(400, 'outdated_client', 'The client credentials are outdated');
             return false;
         }
 
